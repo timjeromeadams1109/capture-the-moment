@@ -14,9 +14,10 @@ import {
   Menu,
   X,
   LogOut,
-  ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 const navigation = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -35,6 +36,21 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { profile, loading, signOut } = useAuth();
+
+  // Get user initials
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const userInitials = profile?.full_name ? getInitials(profile.full_name) : "AD";
+  const userName = profile?.full_name || "Admin User";
+  const userEmail = profile?.email || "admin@ctm.com";
 
   return (
     <div className="min-h-screen bg-neutral-950">
@@ -93,18 +109,28 @@ export default function AdminLayout({
 
         {/* User section */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-neutral-800">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center">
-              <span className="text-white font-medium text-sm">AD</span>
+          {loading ? (
+            <div className="flex items-center justify-center py-2">
+              <Loader2 className="w-5 h-5 text-neutral-400 animate-spin" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">Admin User</p>
-              <p className="text-xs text-neutral-500 truncate">admin@ctm.com</p>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center">
+                <span className="text-white font-medium text-sm">{userInitials}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{userName}</p>
+                <p className="text-xs text-neutral-500 truncate">{userEmail}</p>
+              </div>
+              <button
+                onClick={signOut}
+                className="text-neutral-400 hover:text-white transition-colors"
+                title="Sign out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
-            <button className="text-neutral-400 hover:text-white">
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+          )}
         </div>
       </aside>
 

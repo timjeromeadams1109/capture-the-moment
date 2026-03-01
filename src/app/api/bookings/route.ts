@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { createBooking, getBookingById } from "@/lib/data/bookings";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendBookingConfirmation } from "@/lib/services/notifications";
 
 // Validation schema for booking creation
 const bookingSchema = z.object({
@@ -52,21 +55,13 @@ const bookingSchema = z.object({
   }),
 });
 
-// Generate booking number
-function generateBookingNumber(): string {
-  const prefix = "CTM";
-  const year = new Date().getFullYear().toString().slice(-2);
-  const random = Math.floor(Math.random() * 10000)
-    .toString()
-    .padStart(4, "0");
-  return `${prefix}${year}${random}`;
-}
-
 // Calculate end time
 function calculateEndTime(startTime: string, durationHours: number): string {
   const [hours, minutes] = startTime.split(":").map(Number);
   const endHours = hours + durationHours;
-  return `${endHours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+  return `${endHours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -89,69 +84,85 @@ export async function POST(request: NextRequest) {
 
     const data = validationResult.data;
 
-    // Generate booking number
-    const bookingNumber = generateBookingNumber();
+    // Get service ID from slug if not provided
+    let serviceId = data.serviceId;
+    if (!serviceId) {
+      const supabase = createAdminClient();
+      const { data: service } = await supabase
+        .from("services")
+        .select("id")
+        .eq("slug", data.serviceSlug)
+        .single<{ id: string }>();
+
+      if (!service) {
+        return NextResponse.json(
+          { success: false, error: "Service not found" },
+          { status: 400 }
+        );
+      }
+      serviceId = service.id;
+    }
 
     // Calculate end time
     const endTime = calculateEndTime(data.startTime, data.durationHours);
 
-    // In production, this would:
-    // 1. Check availability one more time (atomic lock)
-    // 2. Create the booking in the database
-    // 3. Send confirmation SMS
-    // 4. Notify admin
-    // 5. Set up 24-hour hold expiration
+    // Prepare add-ons for database
+    const addOns = data.selectedAddOns.map((addon) => ({
+      add_on_id: addon.id,
+      quantity: addon.quantity,
+      unit_price: addon.unitPrice,
+      total_price: addon.totalPrice,
+    }));
 
-    // For now, simulate the booking creation
-    const booking = {
-      id: crypto.randomUUID(),
-      bookingNumber,
-      serviceId: data.serviceId,
-      serviceSlug: data.serviceSlug,
-      serviceName: data.serviceName,
-      eventDate: data.eventDate,
-      startTime: data.startTime,
-      endTime,
-      durationHours: data.durationHours,
-      eventType: data.eventType,
-      eventName: data.eventName || null,
-      venueName: data.venueName,
-      venueAddress: data.venueAddress,
-      venueZip: data.venueZip,
-      contactName: data.contactName,
-      contactEmail: data.contactEmail,
-      contactPhone: data.contactPhone,
-      companyName: data.companyName || null,
-      clientNotes: data.clientNotes || null,
-      referralCodeUsed: data.referralCode || null,
-      basePrice: data.pricing.basePrice,
-      extraHoursPrice: data.pricing.extraHoursPrice,
-      addOnsPrice: data.pricing.addOnsPrice,
-      travelFee: data.pricing.travelFee,
-      discountAmount: data.pricing.discountAmount,
+    // Create the booking
+    const booking = await createBooking({
+      service_id: serviceId,
+      event_date: data.eventDate,
+      start_time: data.startTime,
+      end_time: endTime,
+      duration_hours: data.durationHours,
+      event_type: data.eventType,
+      event_name: data.eventName,
+      venue_name: data.venueName,
+      venue_address: data.venueAddress,
+      venue_zip: data.venueZip,
+      contact_name: data.contactName,
+      contact_email: data.contactEmail,
+      contact_phone: data.contactPhone,
+      company_name: data.companyName,
+      base_price: data.pricing.basePrice,
+      extra_hours_price: data.pricing.extraHoursPrice,
+      add_ons_price: data.pricing.addOnsPrice,
+      travel_fee: data.pricing.travelFee,
+      travel_miles: data.pricing.travelMiles,
+      discount_amount: data.pricing.discountAmount,
+      discount_code: data.referralCode,
       subtotal: data.pricing.subtotal,
-      taxAmount: data.pricing.taxAmount,
-      totalPrice: data.pricing.totalPrice,
-      depositAmount: data.pricing.depositAmount,
-      depositPaid: false,
-      status: "requested",
-      holdExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date().toISOString(),
-      addOns: data.selectedAddOns,
-    };
+      total_price: data.pricing.totalPrice,
+      deposit_amount: data.pricing.depositAmount,
+      referral_code_used: data.referralCode,
+      client_notes: data.clientNotes,
+      source: "website",
+      add_ons: addOns,
+    });
 
-    // Log the booking (in production, save to database)
-    console.log("New booking created:", JSON.stringify(booking, null, 2));
+    // Send confirmation notifications
+    const fullBooking = await getBookingById(booking.id);
+    if (fullBooking) {
+      sendBookingConfirmation(fullBooking).catch((error) => {
+        console.error("Error sending confirmation:", error);
+      });
+    }
 
     return NextResponse.json({
       success: true,
       booking: {
         id: booking.id,
-        bookingNumber: booking.bookingNumber,
+        bookingNumber: booking.booking_number,
         status: booking.status,
-        totalPrice: booking.totalPrice,
-        depositAmount: booking.depositAmount,
-        holdExpiresAt: booking.holdExpiresAt,
+        totalPrice: booking.total_price,
+        depositAmount: booking.deposit_amount,
+        holdExpiresAt: booking.hold_expires_at,
       },
       message: "Booking request submitted successfully",
     });
@@ -168,16 +179,15 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  // In production, this would fetch bookings from the database
-  // with proper authentication and filtering
-
   const searchParams = request.nextUrl.searchParams;
   const status = searchParams.get("status");
   const date = searchParams.get("date");
 
+  // This endpoint is for public use - limited access
+  // Admin endpoint is at /api/admin/bookings
+
   return NextResponse.json({
     success: true,
-    bookings: [],
-    message: "Bookings endpoint ready. Connect Supabase to enable.",
+    message: "Use the booking form to create a booking",
   });
 }

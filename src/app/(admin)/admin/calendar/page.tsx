@@ -1,5 +1,8 @@
 "use client";
 
+// Prevent static generation - this page requires runtime features
+export const dynamic = "force-dynamic";
+
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
