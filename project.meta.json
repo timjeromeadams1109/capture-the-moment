@@ -1,0 +1,38 @@
+{
+  "name": "capture-the-moment",
+  "displayName": "Capture the Moment",
+  "repoName": "capture-the-moment",
+  "description": "Event photography platform connecting guests with professional photographers. Real-time photo sharing, curated galleries, and instant delivery via SMS/email.",
+  "techStack": {
+    "Framework": "Next.js 16 (App Router) + TypeScript",
+    "Styling": "Tailwind CSS 4 + Radix UI",
+    "Database": "Supabase (PostgreSQL)",
+    "Auth": "Supabase Auth",
+    "Communications": "Twilio SMS + Resend Email",
+    "Validation": "Zod + React Hook Form"
+  },
+  "features": [
+    { "name": "Event Creation", "description": "Create photography events with custom settings and guest lists" },
+    { "name": "Real-Time Gallery", "description": "Live photo feed with instant uploads from photographers" },
+    { "name": "Guest Notifications", "description": "SMS and email notifications via Twilio and Resend" },
+    { "name": "Photo Curation", "description": "Select, organize, and deliver final photo collections" },
+    { "name": "Responsive Design", "description": "Mobile-first UI for guests and photographers alike" }
+  ],
+  "envVars": [
+    { "name": "NEXT_PUBLIC_SUPABASE_URL", "description": "Supabase project URL" },
+    { "name": "NEXT_PUBLIC_SUPABASE_ANON_KEY", "description": "Supabase anonymous key" },
+    { "name": "SUPABASE_SERVICE_ROLE_KEY", "description": "Supabase service role key" },
+    { "name": "TWILIO_ACCOUNT_SID", "description": "Twilio account SID" },
+    { "name": "TWILIO_AUTH_TOKEN", "description": "Twilio auth token" },
+    { "name": "TWILIO_PHONE_NUMBER", "description": "Twilio sender phone number" },
+    { "name": "RESEND_API_KEY", "description": "Resend email API key" }
+  ],
+  "projectStructure": "capture-the-moment/\n├── src/\n│   ├── app/           # Next.js App Router pages\n│   ├── components/    # React components\n│   │   └── ui/        # Radix-based UI primitives\n│   └── lib/           # Utilities, Supabase client, helpers\n├── supabase/          # Database migrations\n├── public/            # Static assets\n└── scripts/           # Build & generation scripts",
+  "deployment": "Deployed on **Vercel** with automatic deploys from the `main` branch.\n\n1. Push to `main` triggers Vercel build\n2. Environment variables configured in Vercel dashboard\n3. Supabase handles database and auth",
+  "links": {
+    "GitHub": "https://github.com/timjeromeadams1109/capture-the-moment",
+    "Vercel Dashboard": "https://vercel.com/tim-adams-projects-6c46d12d/capture-the-moment",
+    "Supabase Dashboard": "https://supabase.com/dashboard/project/ifwnsvbocyvxjlyplyan"
+  },
+  "license": "MIT"
+}

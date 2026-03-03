@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Capture the Moment
+
+Event photography platform connecting guests with professional photographers. Real-time photo sharing, curated galleries, and instant delivery via SMS/email.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 16 (App Router) + TypeScript |
+| Styling | Tailwind CSS 4 + Radix UI |
+| Database | Supabase (PostgreSQL) |
+| Auth | Supabase Auth |
+| Communications | Twilio SMS + Resend Email |
+| Validation | Zod + React Hook Form |
+
+
+## Features
+
+- **Event Creation** — Create photography events with custom settings and guest lists
+- **Real-Time Gallery** — Live photo feed with instant uploads from photographers
+- **Guest Notifications** — SMS and email notifications via Twilio and Resend
+- **Photo Curation** — Select, organize, and deliver final photo collections
+- **Responsive Design** — Mobile-first UI for guests and photographers alike
+
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- Supabase account
+
+### Installation
+
+```bash
+git clone https://github.com/timjeromeadams1109/capture-the-moment.git
+cd capture-the-moment
+npm install
+```
+
+### Environment Variables
+
+Copy `.env.local.example` to `.env.local` and configure:
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
+| `TWILIO_ACCOUNT_SID` | Twilio account SID |
+| `TWILIO_AUTH_TOKEN` | Twilio auth token |
+| `TWILIO_PHONE_NUMBER` | Twilio sender phone number |
+| `RESEND_API_KEY` | Resend email API key |
+
+### Run
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+capture-the-moment/
+├── src/
+│   ├── app/           # Next.js App Router pages
+│   ├── components/    # React components
+│   │   └── ui/        # Radix-based UI primitives
+│   └── lib/           # Utilities, Supabase client, helpers
+├── supabase/          # Database migrations
+├── public/            # Static assets
+└── scripts/           # Build & generation scripts
+```
 
-## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | next dev |
+| `npm run build` | next build |
+| `npm run start` | next start |
+| `npm run lint` | eslint |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Deployed on **Vercel** with automatic deploys from the `main` branch.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push to `main` triggers Vercel build
+2. Environment variables configured in Vercel dashboard
+3. Supabase handles database and auth
+
+
+## Links
+
+- [GitHub](https://github.com/timjeromeadams1109/capture-the-moment)
+- [Vercel Dashboard](https://vercel.com/tim-adams-projects-6c46d12d/capture-the-moment)
+- [Supabase Dashboard](https://supabase.com/dashboard/project/ifwnsvbocyvxjlyplyan)
+
+
+## License
+
+MIT
+
+---
+*Auto-generated from project.meta.json — do not edit manually.*
