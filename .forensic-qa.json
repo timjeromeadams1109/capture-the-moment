@@ -1,0 +1,39 @@
+{
+  "projectName": "capture-the-moment",
+  "baseUrl": "http://localhost:3000",
+  "pages": [
+    { "path": "/", "name": "Home", "expectedStatus": 200 },
+    { "path": "/services", "name": "Services", "expectedStatus": 200 },
+    { "path": "/gallery", "name": "Gallery", "expectedStatus": 200 },
+    { "path": "/book", "name": "Book", "expectedStatus": 200 },
+    { "path": "/corporate", "name": "Corporate", "expectedStatus": 200 },
+    { "path": "/login", "name": "Login", "expectedStatus": 200 }
+  ],
+  "apiEndpoints": [
+    { "method": "GET", "path": "/api/availability", "expectedStatus": 200 },
+    { "method": "GET", "path": "/api/bookings", "expectedStatus": 200 }
+  ],
+  "userFlows": [
+    {
+      "name": "Landing to booking",
+      "steps": ["goto:/", "wait:1000", "click:Book Now", "wait:1000"]
+    },
+    {
+      "name": "Gallery page load",
+      "steps": ["goto:/gallery", "wait:1000"]
+    }
+  ],
+  "authFlows": [],
+  "forms": [
+    {
+      "name": "Booking form",
+      "path": "/book",
+      "fields": ["name", "email", "date", "service"]
+    }
+  ],
+  "consoleErrorThreshold": 0,
+  "performanceBudget": {
+    "firstContentfulPaint": 3000,
+    "largestContentfulPaint": 4000
+  }
+}
