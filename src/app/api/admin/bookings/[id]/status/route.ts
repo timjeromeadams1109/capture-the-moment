@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { updateBookingStatus } from "@/lib/data/bookings";
 import type { BookingStatus } from "@/lib/types/database";
+import { validateOrigin, isTrustedSource } from "@/lib/csrf";
 
 const statusUpdateSchema = z.object({
   status: z.enum([
@@ -23,6 +24,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!isTrustedSource(request) && !validateOrigin(request)) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const { id } = await params;
 

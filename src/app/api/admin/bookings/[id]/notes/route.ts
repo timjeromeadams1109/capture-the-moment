@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { updateBookingNotes } from "@/lib/data/bookings";
+import { validateOrigin, isTrustedSource } from "@/lib/csrf";
 
 const notesUpdateSchema = z.object({
   admin_notes: z.string().optional(),
@@ -12,6 +13,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!isTrustedSource(request) && !validateOrigin(request)) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const { id } = await params;
 

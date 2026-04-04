@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getBookingById, updateBookingStatus } from "@/lib/data/bookings";
 import { sendBookingApproved } from "@/lib/services/notifications";
+import { validateOrigin, isTrustedSource } from "@/lib/csrf";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!isTrustedSource(request) && !validateOrigin(request)) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const { id } = await params;
 

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createBooking, getBookingById } from "@/lib/data/bookings";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBookingConfirmation } from "@/lib/services/notifications";
+import { validateOrigin, isTrustedSource } from "@/lib/csrf";
 
 // Validation schema for booking creation
 const bookingSchema = z.object({
@@ -65,6 +66,10 @@ function calculateEndTime(startTime: string, durationHours: number): string {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isTrustedSource(request) && !validateOrigin(request)) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
 

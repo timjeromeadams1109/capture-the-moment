@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { sendSms, sendCustomSms, SMS_TEMPLATES, type SmsTemplateType } from "@/lib/services/sms";
+import { validateOrigin, isTrustedSource } from "@/lib/csrf";
 
 const sendSmsSchema = z.object({
   to: z.string().min(10),
@@ -12,6 +13,10 @@ const sendSmsSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  if (!isTrustedSource(request) && !validateOrigin(request)) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Verify admin authentication
     const supabase = await createClient();
