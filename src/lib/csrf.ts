@@ -9,9 +9,8 @@
  *   }
  */
 
-const ALLOWED_ORIGINS = new Set([
-  // TODO: add production domain once deployed
-  // "https://capture-the-moment.vercel.app",
+const ALLOWED_ORIGINS = new Set<string>([
+  "https://capture-the-moment.vercel.app",
 ]);
 
 // Trusted sources that skip origin checks (webhooks, internal APIs)
