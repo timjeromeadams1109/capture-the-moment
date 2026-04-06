@@ -29,6 +29,7 @@ Event photography platform connecting guests with professional photographers. Re
 
 - Node.js 18+
 - Supabase account
+- Redis instance
 
 ### Installation
 
@@ -82,6 +83,9 @@ capture-the-moment/
 | `npm run build` | next build |
 | `npm run start` | next start |
 | `npm run lint` | eslint |
+| `npm run test` | vitest run |
+| `npm run test:watch` | vitest |
+| `npm run test:coverage` | vitest run --coverage |
 
 
 ## Deployment
