@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TIME_SLOTS } from "@/lib/types/booking";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { availabilityLimiter, checkLimit, getClientIp } from "@/lib/ratelimit";
+import { logError, logRequest } from "@/lib/logger";
 
 interface BookingSlot {
   start_time: string;
@@ -16,6 +18,16 @@ interface TimeSlotRecord {
 }
 
 export async function GET(request: NextRequest) {
+  logRequest(request);
+  const ip = getClientIp(request);
+  const { allowed } = await checkLimit(availabilityLimiter, ip);
+  if (!allowed) {
+    return NextResponse.json(
+      { success: false, error: "Rate limit exceeded. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const date = searchParams.get("date");
@@ -144,7 +156,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Availability check error:", error);
+    logError(error, { endpoint: '/api/availability' });
     return NextResponse.json(
       { success: false, error: "Failed to check availability" },
       { status: 500 }

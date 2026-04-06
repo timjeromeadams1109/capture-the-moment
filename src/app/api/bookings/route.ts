@@ -4,6 +4,8 @@ import { createBooking, getBookingById } from "@/lib/data/bookings";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBookingConfirmation } from "@/lib/services/notifications";
 import { validateOrigin, isTrustedSource } from "@/lib/csrf";
+import { bookingsLimiter, checkLimit, getClientIp } from "@/lib/ratelimit";
+import { logError, logRequest } from "@/lib/logger";
 
 // Validation schema for booking creation
 const bookingSchema = z.object({
@@ -66,8 +68,18 @@ function calculateEndTime(startTime: string, durationHours: number): string {
 }
 
 export async function POST(request: NextRequest) {
+  logRequest(request);
   if (!isTrustedSource(request) && !validateOrigin(request)) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+
+  const ip = getClientIp(request);
+  const { allowed } = await checkLimit(bookingsLimiter, ip);
+  if (!allowed) {
+    return NextResponse.json(
+      { success: false, error: "Rate limit exceeded. Please try again later." },
+      { status: 429 }
+    );
   }
 
   try {
@@ -155,7 +167,7 @@ export async function POST(request: NextRequest) {
     const fullBooking = await getBookingById(booking.id);
     if (fullBooking) {
       sendBookingConfirmation(fullBooking).catch((error) => {
-        console.error("Error sending confirmation:", error);
+        logError(error, { endpoint: '/api/bookings', context: 'confirmation_email' });
       });
     }
 
@@ -172,7 +184,7 @@ export async function POST(request: NextRequest) {
       message: "Booking request submitted successfully",
     });
   } catch (error) {
-    console.error("Booking creation error:", error);
+    logError(error, { endpoint: '/api/bookings' });
     return NextResponse.json(
       {
         success: false,

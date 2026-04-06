@@ -3,6 +3,8 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { updateBookingNotes } from "@/lib/data/bookings";
 import { validateOrigin, isTrustedSource } from "@/lib/csrf";
+import { adminLimiter, checkLimit } from "@/lib/ratelimit";
+import { logError, logRequest } from "@/lib/logger";
 
 const notesUpdateSchema = z.object({
   admin_notes: z.string().optional(),
@@ -13,6 +15,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  logRequest(request);
   if (!isTrustedSource(request) && !validateOrigin(request)) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
@@ -47,6 +50,14 @@ export async function POST(
       );
     }
 
+    const { allowed } = await checkLimit(adminLimiter, user.id);
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: "Rate limit exceeded. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     // Validate request body
     const body = await request.json();
     const validationResult = notesUpdateSchema.safeParse(body);
@@ -70,7 +81,7 @@ export async function POST(
       message: "Notes updated successfully",
     });
   } catch (error) {
-    console.error("Error updating booking notes:", error);
+    logError(error, { endpoint: '/api/admin/bookings/[id]/notes' });
     return NextResponse.json(
       { success: false, error: "Failed to update booking notes" },
       { status: 500 }

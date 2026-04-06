@@ -3,8 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { getBookings } from "@/lib/data/bookings";
 import { getBookingCountsByStatus } from "@/lib/data/stats";
 import type { BookingStatus } from "@/lib/types/database";
+import { adminLimiter, checkLimit } from "@/lib/ratelimit";
+import { logError, logRequest } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
+  logRequest(request);
   try {
     // Verify admin authentication
     const supabase = await createClient();
@@ -33,6 +36,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const { allowed } = await checkLimit(adminLimiter, user.id);
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: "Rate limit exceeded. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get("status") as BookingStatus | "all" | null;
     const service = searchParams.get("service");
@@ -57,7 +68,7 @@ export async function GET(request: NextRequest) {
       counts,
     });
   } catch (error) {
-    console.error("Error fetching bookings:", error);
+    logError(error, { endpoint: '/api/admin/bookings' });
     return NextResponse.json(
       { success: false, error: "Failed to fetch bookings" },
       { status: 500 }

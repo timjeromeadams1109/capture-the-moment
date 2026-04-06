@@ -3,11 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { getBookingById, updateBookingStatus } from "@/lib/data/bookings";
 import { sendBookingApproved } from "@/lib/services/notifications";
 import { validateOrigin, isTrustedSource } from "@/lib/csrf";
+import { adminLimiter, checkLimit } from "@/lib/ratelimit";
+import { logError, logRequest } from "@/lib/logger";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  logRequest(request);
   if (!isTrustedSource(request) && !validateOrigin(request)) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
@@ -39,6 +42,14 @@ export async function POST(
       return NextResponse.json(
         { success: false, error: "Forbidden" },
         { status: 403 }
+      );
+    }
+
+    const { allowed } = await checkLimit(adminLimiter, user.id);
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: "Rate limit exceeded. Please try again later." },
+        { status: 429 }
       );
     }
 
@@ -75,7 +86,7 @@ export async function POST(
       message: "Booking approved successfully",
     });
   } catch (error) {
-    console.error("Error approving booking:", error);
+    logError(error, { endpoint: '/api/admin/bookings/[id]/approve' });
     return NextResponse.json(
       { success: false, error: "Failed to approve booking" },
       { status: 500 }

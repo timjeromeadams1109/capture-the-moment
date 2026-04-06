@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getBookingById, getBookingActivity } from "@/lib/data/bookings";
+import { adminLimiter, checkLimit } from "@/lib/ratelimit";
+import { logError, logRequest } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  logRequest(request);
   try {
     const { id } = await params;
 
@@ -36,6 +39,14 @@ export async function GET(
       );
     }
 
+    const { allowed } = await checkLimit(adminLimiter, user.id);
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: "Rate limit exceeded. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     // Fetch booking and activity in parallel
     const [booking, activity] = await Promise.all([
       getBookingById(id),
@@ -55,7 +66,7 @@ export async function GET(
       activity,
     });
   } catch (error) {
-    console.error("Error fetching booking:", error);
+    logError(error, { endpoint: '/api/admin/bookings/[id]' });
     return NextResponse.json(
       { success: false, error: "Failed to fetch booking" },
       { status: 500 }

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { sendSms, sendCustomSms, SMS_TEMPLATES, type SmsTemplateType } from "@/lib/services/sms";
 import { validateOrigin, isTrustedSource } from "@/lib/csrf";
+import { smsLimiter, checkLimit } from "@/lib/ratelimit";
+import { logError, logRequest } from "@/lib/logger";
 
 const sendSmsSchema = z.object({
   to: z.string().min(10),
@@ -13,6 +15,7 @@ const sendSmsSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  logRequest(request);
   if (!isTrustedSource(request) && !validateOrigin(request)) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
@@ -42,6 +45,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Forbidden" },
         { status: 403 }
+      );
+    }
+
+    // Tight limit — each SMS costs real Twilio spend; key by user ID
+    const { allowed } = await checkLimit(smsLimiter, user.id);
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: "Rate limit exceeded. Please try again later." },
+        { status: 429 }
       );
     }
 
@@ -101,7 +113,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error("Error sending SMS:", error);
+    logError(error, { endpoint: '/api/admin/sms/send' });
     return NextResponse.json(
       { success: false, error: "Failed to send SMS" },
       { status: 500 }
@@ -110,6 +122,34 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  logRequest(request);
+  // Verify admin authentication
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  // Check if user is admin
+  const { data: userData } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single<{ role: string }>();
+
+  if (userData?.role !== "admin") {
+    return NextResponse.json(
+      { success: false, error: "Forbidden" },
+      { status: 403 }
+    );
+  }
+
   // Return available templates
   const templates = Object.entries(SMS_TEMPLATES).map(([id, data]) => ({
     id,
