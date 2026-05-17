@@ -10,4 +10,4 @@ process.env.UPSTASH_REDIS_REST_TOKEN = "";
 process.env.TWILIO_ACCOUNT_SID = "";
 process.env.TWILIO_AUTH_TOKEN = "";
 process.env.TWILIO_PHONE_NUMBER = "";
-process.env.NODE_ENV = "test";
+Object.defineProperty(process.env, 'NODE_ENV', { value: 'test', writable: true });
