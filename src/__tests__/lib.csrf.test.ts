@@ -9,7 +9,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 
 afterEach(() => {
-  process.env.NODE_ENV = "test";
+  Object.defineProperty(process.env, 'NODE_ENV', { value: 'test', writable: true });
 });
 
 // Import the real module (not mocked version)
@@ -45,20 +45,20 @@ describe("isTrustedSource", () => {
 
 describe("validateOrigin", () => {
   it("returns true for the production allowed origin", () => {
-    process.env.NODE_ENV = "production";
+    Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
     const req = makeRequest({ origin: "https://capture-the-moment.vercel.app" });
     // Real impl → true; mocked impl → true (mock always returns true)
     expect(validateOrigin(req)).toBe(true);
   });
 
   it("returns true in development (bypass)", () => {
-    process.env.NODE_ENV = "development";
+    Object.defineProperty(process.env, 'NODE_ENV', { value: 'development', writable: true });
     const req = makeRequest({ origin: "https://evil.com" });
     expect(validateOrigin(req)).toBe(true);
   });
 
   it("blocks disallowed origin in production (real module only)", () => {
-    process.env.NODE_ENV = "production";
+    Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
     const req = makeRequest({ origin: "https://attacker.com" });
     const result = validateOrigin(req);
     // Real: false. Mocked: true. We accept both and just verify it's a boolean.
@@ -66,7 +66,7 @@ describe("validateOrigin", () => {
   });
 
   it("accepts referer from allowed origin", () => {
-    process.env.NODE_ENV = "production";
+    Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
     const req = makeRequest({ referer: "https://capture-the-moment.vercel.app/book" });
     expect(validateOrigin(req)).toBe(true);
   });
