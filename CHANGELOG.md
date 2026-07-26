@@ -1,3 +1,8 @@
+## [Unreleased] — 2026-07-25
+
+### Security
+- Patched Next.js to 16.2.11 to resolve 5 P1 HIGH CVEs published 2026-07-22 (GHSA-68g3-v927-f742 cache confusion, GHSA-6gpp-xcg3-4w24 middleware/Turbopack bypass, GHSA-89xv-2m56-2m9x SSRF in Server Actions, GHSA-m99w-x7hq-7vfj DoS in Server Actions, GHSA-p9j2-gv94-2wf4 SSRF in rewrites).
+
 ## [Unreleased] — 2026-05-17
 
 ### Security
